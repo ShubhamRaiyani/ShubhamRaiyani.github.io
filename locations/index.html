@@ -7,12 +7,13 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
         #map { height: 400px; }
+        #alertMessage { margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <button id="setTarget">Set Target Point</button>
-    <input type="number" id="radius" step="0.1" placeholder="Radius in kilometers">
+    <input type="number" id="radius" placeholder="Radius in meters">
     <button id="setRadius">Set Radius</button>
     <button id="setAlert">Set Alert</button>
     <div id="alertMessage"></div>
