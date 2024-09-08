@@ -1,11 +1,15 @@
 let map, userMarker, targetMarker, circle;
 let targetLat, targetLng, targetRadius;
 let alertActive = false;
+let audioContext;
+let bellBuffer;
+let isInTargetArea = false;
 
 function initMap() {
     map = L.map('map').setView([0, 0], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     trackLocation();
+    initAudio();
 }
 
 function trackLocation() {
@@ -89,12 +93,15 @@ function checkProximity(lat, lng) {
     if (targetLat && targetLng && targetRadius) {
         const distance = map.distance([lat, lng], [targetLat, targetLng]);
         if (distance <= targetRadius) {
-            if (alertActive) {
+            if (alertActive && !isInTargetArea) {
                 document.getElementById('alertMessage').textContent = "You've entered the target area!";
                 document.getElementById('alertMessage').style.color = "red";
+                playAlertSound();
+                isInTargetArea = true;
             }
         } else {
             document.getElementById('alertMessage').textContent = "";
+            isInTargetArea = false;
         }
     }
 }
@@ -109,9 +116,38 @@ function setAlert() {
     document.getElementById('setAlert').disabled = true;
 }
 
+function initAudio() {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    fetch('https://freesound.org/data/previews/339/339809_5121236-lq.mp3')
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+            bellBuffer = audioBuffer;
+        })
+        .catch(error => console.error('Error loading sound:', error));
+}
+
+function playAlertSound() {
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+
+    if (bellBuffer) {
+        const source = audioContext.createBufferSource();
+        source.buffer = bellBuffer;
+        source.connect(audioContext.destination);
+        source.start();
+    }
+}
+
+function testSound() {
+    playAlertSound();
+}
+
 document.getElementById('setTarget').addEventListener('click', setTargetPoint);
 document.getElementById('setRadius').addEventListener('click', setRadius);
 document.getElementById('setAlert').addEventListener('click', setAlert);
+document.getElementById('testSound').addEventListener('click', testSound);
 
 // Remove this line as we now have a separate button for setting the radius
 // document.getElementById('radius').addEventListener('change', updateCircle);
