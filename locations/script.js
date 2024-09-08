@@ -62,11 +62,12 @@ function setTargetPoint() {
         }
         
         updateCircle();
+        document.getElementById('setTarget').textContent = "Change Target Point";
     });
 }
 
 function setRadius() {
-    targetRadius = parseInt(document.getElementById('radius').value);
+    targetRadius = parseFloat(document.getElementById('radius').value) * 1000; // Convert km to meters
     if (isNaN(targetRadius) || targetRadius <= 0) {
         alert("Please enter a valid radius (positive number)");
         return;
@@ -128,28 +129,27 @@ function initAudio() {
 }
 
 function playAlertSound() {
-    if (audioContext.state === 'suspended') {
-        audioContext.resume();
-    }
+    playSound();
+}
 
-    if (bellBuffer) {
-        const source = audioContext.createBufferSource();
-        source.buffer = bellBuffer;
-        source.connect(audioContext.destination);
-        source.start();
-    }
+function playSound() {
+    const audio = document.getElementById('alertSound');
+    audio.play().catch(error => {
+        console.error('Error playing sound:', error);
+        // Fallback for devices that don't support automatic playback
+        alert('Alert triggered! Click OK to play sound.');
+        audio.play();
+    });
 }
 
 function testSound() {
-    playAlertSound();
+    playSound();
 }
 
+// Add event listeners
 document.getElementById('setTarget').addEventListener('click', setTargetPoint);
 document.getElementById('setRadius').addEventListener('click', setRadius);
 document.getElementById('setAlert').addEventListener('click', setAlert);
 document.getElementById('testSound').addEventListener('click', testSound);
-
-// Remove this line as we now have a separate button for setting the radius
-// document.getElementById('radius').addEventListener('change', updateCircle);
 
 window.onload = initMap;
