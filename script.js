@@ -1,0 +1,155 @@
+let map, userMarker, targetMarker, circle;
+let targetLat, targetLng, targetRadius;
+let alertActive = false;
+let audioContext;
+let bellBuffer;
+let isInTargetArea = false;
+
+function initMap() {
+    map = L.map('map').setView([0, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    trackLocation();
+    initAudio();
+}
+
+function trackLocation() {
+    if ("geolocation" in navigator) {
+        navigator.geolocation.watchPosition(updateLocation, handleError, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+        });
+    } else {
+        alert("Geolocation is not supported by your browser");
+    }
+}
+
+function updateLocation(position) {
+    const { latitude, longitude } = position.coords;
+    
+    if (!userMarker) {
+        userMarker = L.marker([latitude, longitude], {
+            icon: L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            })
+        }).addTo(map);
+        map.setView([latitude, longitude], 13);
+    } else {
+        userMarker.setLatLng([latitude, longitude]);
+    }
+
+    checkProximity(latitude, longitude);
+}
+
+function handleError(error) {
+    console.error("Error getting location:", error.message);
+}
+
+function setTargetPoint() {
+    map.once('click', (e) => {
+        targetLat = e.latlng.lat;
+        targetLng = e.latlng.lng;
+        
+        if (targetMarker) {
+            targetMarker.setLatLng([targetLat, targetLng]);
+        } else {
+            targetMarker = L.marker([targetLat, targetLng]).addTo(map);
+        }
+        
+        updateCircle();
+        document.getElementById('setTarget').textContent = "Change Target Point";
+    });
+}
+
+function setRadius() {
+    targetRadius = parseFloat(document.getElementById('radius').value) * 1000; // Convert km to meters
+    if (isNaN(targetRadius) || targetRadius <= 0) {
+        alert("Please enter a valid radius (positive number)");
+        return;
+    }
+    updateCircle();
+}
+
+function updateCircle() {
+    if (!targetLat || !targetLng) {
+        alert("Please set a target point first");
+        return;
+    }
+    
+    if (circle) {
+        map.removeLayer(circle);
+    }
+    
+    circle = L.circle([targetLat, targetLng], {
+        radius: targetRadius
+    }).addTo(map);
+}
+
+function checkProximity(lat, lng) {
+    if (targetLat && targetLng && targetRadius) {
+        const distance = map.distance([lat, lng], [targetLat, targetLng]);
+        if (distance <= targetRadius) {
+            if (alertActive && !isInTargetArea) {
+                document.getElementById('alertMessage').textContent = "You've entered the target area!";
+                document.getElementById('alertMessage').style.color = "red";
+                playAlertSound();
+                isInTargetArea = true;
+            }
+        } else {
+            document.getElementById('alertMessage').textContent = "";
+            isInTargetArea = false;
+        }
+    }
+}
+
+function setAlert() {
+    if (!targetLat || !targetLng || !targetRadius) {
+        alert("Please set a target point and radius first");
+        return;
+    }
+    alertActive = true;
+    document.getElementById('setAlert').textContent = "Alert Active";
+    document.getElementById('setAlert').disabled = true;
+}
+
+function initAudio() {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    fetch('https://freesound.org/data/previews/339/339809_5121236-lq.mp3')
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+            bellBuffer = audioBuffer;
+        })
+        .catch(error => console.error('Error loading sound:', error));
+}
+
+function playAlertSound() {
+    playSound();
+}
+
+function playSound() {
+    const audio = document.getElementById('alertSound');
+    audio.play().catch(error => {
+        console.error('Error playing sound:', error);
+        // Fallback for devices that don't support automatic playback
+        alert('Alert triggered! Click OK to play sound.');
+        audio.play();
+    });
+}
+
+function testSound() {
+    playSound();
+}
+
+// Add event listeners
+document.getElementById('setTarget').addEventListener('click', setTargetPoint);
+document.getElementById('setRadius').addEventListener('click', setRadius);
+document.getElementById('setAlert').addEventListener('click', setAlert);
+document.getElementById('testSound').addEventListener('click', testSound);
+
+window.onload = initMap;
