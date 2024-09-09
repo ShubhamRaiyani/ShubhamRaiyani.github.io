@@ -109,7 +109,7 @@ function checkProximity(lat, lng) {
 
 function setAlert() {
     if (!targetLat || !targetLng || !targetRadius) {
-        alert("Please set a target point and radius first");
+        document.getElementById('alertMessage').textContent = "Please set a target point and radius first";
         return;
     }
     alertActive = true;
@@ -136,9 +136,7 @@ function playSound() {
     const audio = document.getElementById('alertSound');
     audio.play().catch(error => {
         console.error('Error playing sound:', error);
-        // Fallback for devices that don't support automatic playback
-        alert('Alert triggered! Click OK to play sound.');
-        audio.play();
+        document.getElementById('alertMessage').textContent = "Unable to play sound. Please check your device settings.";
     });
 }
 
